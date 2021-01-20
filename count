@@ -1,0 +1,37 @@
+#!/bin/bash 
+#,r5301d1,MEM_LOAD_UOPS_RETIRED.L1_HIT
+#,r5302d1,MEM_LOAD_UOPS_RETIRED.L2_HIT
+#,r5304d1,MEM_LOAD_UOPS_RETIRED.L3_HIT
+#,r5308d1,MEM_LOAD_UOPS_RETIRED.L1_MISS
+#,r5310d1,MEM_LOAD_UOPS_RETIRED.L2_MISS
+#,r5320d1,MEM_LOAD_UOPS_RETIRED.L3_MISS
+#,r5340d1,MEM_LOAD_UOPS_RETIRED.HIT_LFB
+#,r53f824,L2_RQSTS.ALL_PF
+#,r533824,L2_RQSTS.PF_MISS
+#,r53d824,L2_RQSTS.PF_HIT
+#,r53e124,L2_RQSTS.ALL_DEMAND_DATA_RD
+
+
+if [[ -n "$HIT" ]]; then
+  counters="r5301d1,r5302d1,r5304d1"
+fi
+if [[ -n "$MISS" ]]; then
+  if [[ -n "$counters" ]]; then 
+    counters="$counters,"; 
+  fi
+  counters="${counters}r5308d1,r5310d1,r5320d1"
+fi
+
+if [[ -z "$counters" ]]; then
+  echo error: no counters specified
+  exit 1
+fi
+
+perf stat -r 1 -e $counters $@ > /tmp/x 2>&1
+for kp in `cat $0 | head -n14`;
+do 
+  c=`echo $kp | cut -d',' -f2`; 
+  name=`echo $kp | cut -d',' -f3`; 
+  sed -i "s~$c[ ][ ]*~$c\t$name\t~" /tmp/x; 
+done;
+cat /tmp/x
